@@ -1,0 +1,470 @@
+/* ===== CSS VARIABLES & RESET ===== */
+:root {
+  /* Colors */
+  --primary-color: #2e7d32;
+  --primary-dark: #1b5e20;
+  --primary-light: #4caf50;
+  --secondary-color: #81c784;
+  --accent-color: #ffb74d;
+  --light-bg: #f8f9fa;
+  --text-dark: #2e2e2e;
+  --text-muted: #6c757d;
+  --border-color: #e9ecef;
+  
+  /* Spacing System (8px base) */
+  --space-xs: 0.5rem;   /* 8px */
+  --space-sm: 1rem;     /* 16px */
+  --space-md: 1.5rem;   /* 24px */
+  --space-lg: 2rem;     /* 32px */
+  --space-xl: 3rem;     /* 48px */
+  --space-xxl: 4rem;    /* 64px */
+  
+  /* Border Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.15);
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* ===== BASE STYLES ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  line-height: 1.6;
+  color: var(--text-dark);
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== LAYOUT & SPACING ===== */
+.container {
+  padding-left: var(--space-sm);
+  padding-right: var(--space-sm);
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+}
+
+/* ===== TYPOGRAPHY SCALE ===== */
+.display-1 { font-size: 2.5rem; line-height: 1.2; margin-bottom: var(--space-md); }
+.display-2 { font-size: 2rem; line-height: 1.3; margin-bottom: var(--space-sm); }
+.display-3 { font-size: 1.75rem; line-height: 1.4; margin-bottom: var(--space-sm); }
+.display-4 { font-size: 1.5rem; line-height: 1.4; margin-bottom: var(--space-sm); }
+
+h1, .h1 { font-size: 2rem; margin-bottom: var(--space-md); }
+h2, .h2 { font-size: 1.75rem; margin-bottom: var(--space-sm); }
+h3, .h3 { font-size: 1.5rem; margin-bottom: var(--space-sm); }
+h4, .h4 { font-size: 1.25rem; margin-bottom: var(--space-xs); }
+h5, .h5 { font-size: 1.125rem; margin-bottom: var(--space-xs); }
+h6, .h6 { font-size: 1rem; margin-bottom: var(--space-xs); }
+
+.lead {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  margin-bottom: var(--space-md);
+}
+
+/* ===== COMPONENTS ===== */
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  padding: var(--space-xxl) 0;
+  margin-bottom: var(--space-xl);
+}
+
+/* Cards */
+.nutri-card {
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  background: white;
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+}
+
+.nutri-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+.card-header-custom {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  padding: var(--space-md);
+}
+
+.card-body {
+  padding: var(--space-md);
+}
+
+.card-body-sm {
+  padding: var(--space-sm);
+}
+
+/* Buttons */
+.btn-nutri-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border: none;
+  color: white;
+  padding: var(--space-xs) var(--space-lg);
+  border-radius: var(--radius-xl);
+  font-weight: 600;
+  transition: all var(--transition-base);
+}
+
+.btn-nutri-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  color: white;
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+}
+
+.btn-nutri-outline {
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  background: transparent;
+  padding: var(--space-xs) var(--space-lg);
+  border-radius: var(--radius-xl);
+  font-weight: 600;
+  transition: all var(--transition-base);
+}
+
+.btn-nutri-outline:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Button spacing */
+.btn-spacing-sm { margin: var(--space-xs); }
+.btn-spacing-md { margin: var(--space-sm); }
+
+/* Badges */
+.badge-nutri {
+  background: var(--accent-color);
+  color: var(--text-dark);
+  font-size: 0.8rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-xl);
+  margin: 2px;
+}
+
+/* Recipe Cards */
+.recipe-card {
+  border: none;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  height: 100%;
+  margin-bottom: var(--space-md);
+}
+
+.recipe-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+.recipe-image {
+  height: 200px;
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 3rem;
+}
+
+/* Meal Type Badges */
+.badge-breakfast { background: #fff3e0; color: #e65100; }
+.badge-lunch { background: #e8f5e8; color: #2e7d32; }
+.badge-snack { background: #e3f2fd; color: #1565c0; }
+.badge-dinner { background: #f3e5f5; color: #7b1fa2; }
+
+/* Progress bars */
+.progress {
+  height: 8px;
+  border-radius: var(--radius-sm);
+  margin: var(--space-sm) 0;
+}
+
+.progress-bar-protein { background: #ff6b6b; }
+.progress-bar-fat { background: #4ecdc4; }
+.progress-bar-carbs { background: #45b7d1; }
+
+/* Forms */
+.form-control:focus {
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 0.2rem rgba(129, 199, 132, 0.25);
+}
+
+.form-group {
+  margin-bottom: var(--space-md);
+}
+
+/* Nutrition Facts */
+.nutrition-facts {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--space-md);
+}
+
+/* Text Spacing */
+.text-spaced {
+  line-height: 1.7;
+  margin-bottom: var(--space-md);
+}
+
+/* Button Containers */
+.btn-container {
+  padding: var(--space-md);
+  text-align: center;
+}
+
+.btn-container .btn {
+  margin: var(--space-xs);
+  min-width: 140px;
+}
+
+/* Card Actions */
+.card-actions {
+  padding: var(--space-md);
+  border-top: 1px solid var(--border-color);
+  background: var(--light-bg);
+}
+
+/* ===== SPECIFIC COMPONENTS ===== */
+
+/* Week Plan Styles */
+.meal-preview {
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-md) 0;
+  margin: 0 var(--space-sm);
+}
+
+.meal-preview:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.meal-preview:first-child {
+  padding-top: 0;
+}
+
+/* Day Plan Images */
+.meal-image-day {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.meal-image-day-placeholder {
+  width: 100%;
+  height: 160px;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--light-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* Difficulty badges */
+.difficulty-easy { background: #d4edda; color: #155724; }
+.difficulty-medium { background: #fff3cd; color: #856404; }
+.difficulty-hard { background: #f8d7da; color: #721c24; }
+
+/* Nutrition badges */
+.nutrition-badge {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  margin: 2px;
+}
+
+/* Lists */
+.list-unstyled li {
+  margin-bottom: var(--space-xs);
+  padding: var(--space-xs) 0;
+}
+
+.list-unstyled li:last-child {
+  margin-bottom: 0;
+}
+
+/* Alerts */
+.alert {
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  line-height: 1.6;
+  border-radius: var(--radius-md);
+}
+
+.alert ul {
+  margin-bottom: 0;
+}
+
+.alert li {
+  margin-bottom: var(--space-xs);
+}
+
+.alert li:last-child {
+  margin-bottom: 0;
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Spacing utilities */
+.mb-xs { margin-bottom: var(--space-xs); }
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.mb-xl { margin-bottom: var(--space-xl); }
+
+.mt-xs { margin-top: var(--space-xs); }
+.mt-sm { margin-top: var(--space-sm); }
+.mt-md { margin-top: var(--space-md); }
+.mt-lg { margin-top: var(--space-lg); }
+.mt-xl { margin-top: var(--space-xl); }
+
+.p-xs { padding: var(--space-xs); }
+.p-sm { padding: var(--space-sm); }
+.p-md { padding: var(--space-md); }
+.p-lg { padding: var(--space-lg); }
+.p-xl { padding: var(--space-xl); }
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  :root {
+    --space-xs: 0.5rem;
+    --space-sm: 0.75rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-xxl: 3rem;
+  }
+  
+  .hero-section {
+    padding: var(--space-xl) 0;
+    margin-bottom: var(--space-lg);
+  }
+  
+  .display-1 { font-size: 2rem; }
+  .display-2 { font-size: 1.75rem; }
+  .display-3 { font-size: 1.5rem; }
+  .display-4 { font-size: 1.25rem; }
+  
+  h1, .h1 { font-size: 1.75rem; }
+  h2, .h2 { font-size: 1.5rem; }
+  
+  .card-body {
+    padding: var(--space-sm);
+  }
+  
+  .card-header-custom {
+    padding: var(--space-sm);
+  }
+  
+  .meal-image-day,
+  .meal-image-day-placeholder {
+    height: 140px;
+    margin-bottom: var(--space-sm);
+  }
+  
+  .btn-nutri-primary,
+  .btn-nutri-outline {
+    padding: var(--space-xs) var(--space-md);
+    display: block;
+    width: 100%;
+    margin: var(--space-xs) 0;
+  }
+  
+  .meal-preview {
+    padding: var(--space-sm) 0;
+    margin: 0;
+  }
+  
+  .nutrition-facts {
+    padding: var(--space-sm);
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding-left: var(--space-xs);
+    padding-right: var(--space-xs);
+  }
+  
+  .card-body {
+    padding: var(--space-xs);
+  }
+  
+  .btn-container .btn {
+    margin: var(--space-xs) 0;
+    width: 100%;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .btn, .nav, footer {
+    display: none !important;
+  }
+
+  .recipe-card, .nutri-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  .day-plan {
+    page-break-after: always;
+  }
+  
+  .card-body {
+    padding: var(--space-sm) !important;
+  }
+}

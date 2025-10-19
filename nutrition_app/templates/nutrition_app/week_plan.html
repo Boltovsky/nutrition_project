@@ -1,0 +1,228 @@
+{% extends 'nutrition_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="nutrition-facts text-center">
+                <h2 class="fw-bold text-success mb-3">
+                    <i class="bi bi-calendar-week me-2"></i>План питания на неделю
+                </h2>
+                <div class="alert alert-success mb-0">
+                    <h5 class="alert-heading mb-2">
+                        <i class="bi bi-info-circle me-2"></i>Ваша суточная норма: {{ daily_calories }} ккал
+                    </h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Week Grid -->
+    <div class="row g-3">
+        {% for day in week_days %}
+        <div class="col-md-6 col-lg-4">
+            <div class="nutri-card h-100">
+                <div class="card-header-custom text-center position-relative">
+                    <h4 class="mb-0">{{ day.name }}</h4>
+                    <span class="position-absolute top-0 end-0 m-2 badge 
+                        {% if day.accuracy_percentage >= 95 %}bg-success
+                        {% elif day.accuracy_percentage >= 85 %}bg-warning
+                        {% else %}bg-info{% endif %}" 
+                        title="Точность: {{ day.accuracy_percentage|floatformat:1 }}%">
+                        {{ day.accuracy_percentage|floatformat:0 }}%
+                    </span>
+                </div>
+                <div class="card-body p-sm">
+                    
+                    <!-- Breakfast -->
+                    <div class="meal-preview-compact mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-sun text-warning me-2 fs-6"></i>
+                            <strong class="small">Завтрак</strong>
+                            <span class="badge bg-warning ms-auto">{{ day.breakfast.calories }} ккал</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            {% if day.breakfast.image %}
+                                <img src="{{ day.breakfast.image.url }}" alt="{{ day.breakfast.name }}" 
+                                     class="rounded me-2 meal-image-compact">
+                            {% else %}
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center me-2 meal-image-compact">
+                                    <i class="bi bi-cup-hot text-muted fs-6"></i>
+                                </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 small fw-bold text-truncate">{{ day.breakfast.name }}</h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lunch -->
+                    <div class="meal-preview-compact mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-sun-fill text-orange me-2 fs-6"></i>
+                            <strong class="small">Обед</strong>
+                            <span class="badge bg-success ms-auto">{{ day.lunch.calories }} ккал</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            {% if day.lunch.image %}
+                                <img src="{{ day.lunch.image.url }}" alt="{{ day.lunch.name }}" 
+                                     class="rounded me-2 meal-image-compact">
+                            {% else %}
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center me-2 meal-image-compact">
+                                    <i class="bi bi-egg-fried text-muted fs-6"></i>
+                                </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 small fw-bold text-truncate">{{ day.lunch.name }}</h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Snack -->
+                    <div class="meal-preview-compact mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-cup-straw text-info me-2 fs-6"></i>
+                            <strong class="small">Перекус</strong>
+                            <span class="badge bg-info ms-auto">{{ day.snack.calories }} ккал</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            {% if day.snack.image %}
+                                <img src="{{ day.snack.image.url }}" alt="{{ day.snack.name }}" 
+                                     class="rounded me-2 meal-image-compact">
+                            {% else %}
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center me-2 meal-image-compact">
+                                    <i class="bi bi-cup-straw text-muted fs-6"></i>
+                                </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 small fw-bold text-truncate">{{ day.snack.name }}</h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dinner -->
+                    <div class="meal-preview-compact mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-moon text-primary me-2 fs-6"></i>
+                            <strong class="small">Ужин</strong>
+                            <span class="badge bg-primary ms-auto">{{ day.dinner.calories }} ккал</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            {% if day.dinner.image %}
+                                <img src="{{ day.dinner.image.url }}" alt="{{ day.dinner.name }}" 
+                                     class="rounded me-2 meal-image-compact">
+                            {% else %}
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center me-2 meal-image-compact">
+                                    <i class="bi bi-moon-stars text-muted fs-6"></i>
+                                </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 small fw-bold text-truncate">{{ day.dinner.name }}</h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Итоги дня -->
+                    <div class="border-top pt-3 mt-2">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong class="text-success">Итого: {{ day.total_calories }} ккал</strong>
+                            <strong class="text-muted">Цель: {{ daily_calories }} ккал</strong>
+                        </div>
+                        <div class="progress mb-2" style="height: 6px;">
+                            <div class="progress-bar 
+                                {% if day.accuracy_percentage >= 100 %}bg-success
+                                {% elif day.accuracy_percentage >= 90 %}bg-warning
+                                {% else %}bg-info{% endif %}" 
+                                style="width: {% if day.accuracy_percentage > 100 %}100{% else %}{{ day.accuracy_percentage }}{% endif %}%">
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопка детального просмотра -->
+                        <div class="text-center">
+                            <a href="{% url 'day_plan' day.key %}" class="btn btn-nutri-primary btn-sm w-100">
+                                <i class="bi bi-eye me-1"></i>Подробнее
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            {% if is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="btn btn-nutri-outline btn-sm me-2">
+                    <i class="bi bi-speedometer2 me-1"></i>В профиль
+                </a>
+            {% else %}
+                <a href="{% url 'calculate_calories' %}" class="btn btn-nutri-outline btn-sm me-2">
+                    <i class="bi bi-arrow-repeat me-1"></i>Пересчитать
+                </a>
+            {% endif %}
+            
+            <button class="btn btn-nutri-primary btn-sm" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>Распечатать
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.meal-preview-compact {
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 0.75rem;
+}
+
+.meal-preview-compact:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.meal-image-compact {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.card-body.p-sm {
+    padding: 1rem !important;
+}
+
+.text-orange {
+    color: #fd7e14;
+}
+
+/* Убедимся, что названия рецептов не переносятся */
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Компактные отступы для мобильных */
+@media (max-width: 768px) {
+    .container.py-4 {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+    
+    .meal-preview-compact {
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .meal-image-compact {
+        width: 35px;
+        height: 35px;
+    }
+}
+</style>
+{% endblock %}

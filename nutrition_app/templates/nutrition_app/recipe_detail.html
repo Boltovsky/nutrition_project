@@ -1,0 +1,244 @@
+{% extends 'nutrition_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-success">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'week_plan' %}" class="text-success">План на неделю</a></li>
+                    <li class="breadcrumb-item active">{{ recipe.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Recipe Header -->
+    <div class="row mb-5">
+        <div class="col-lg-6">
+            {% if recipe.image %}
+                <img src="{{ recipe.image.url }}" alt="{{ recipe.name }}" 
+                     class="img-fluid rounded shadow" style="max-height: 400px; object-fit: cover;">
+            {% else %}
+                <div class="d-flex align-items-center justify-content-center bg-light rounded shadow" 
+                     style="height: 400px;">
+                    <i class="bi bi-{% if recipe.meal_type == 'breakfast' %}cup-hot{% elif recipe.meal_type == 'lunch' %}egg-fried{% elif recipe.meal_type == 'snack' %}cup-straw{% else %}moon-stars{% endif %} text-muted" style="font-size: 6rem;"></i>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-lg-6">
+            <div class="ps-lg-4">
+                <!-- Meal Type Badge -->
+                <span class="badge 
+                    {% if recipe.meal_type == 'breakfast' %}bg-warning
+                    {% elif recipe.meal_type == 'lunch' %}bg-success
+                    {% elif recipe.meal_type == 'snack' %}bg-info
+                    {% else %}bg-primary{% endif %} mb-3">
+                    {% if recipe.meal_type == 'breakfast' %}Завтрак
+                    {% elif recipe.meal_type == 'lunch' %}Обед
+                    {% elif recipe.meal_type == 'snack' %}Перекус
+                    {% else %}Ужин{% endif %}
+                </span>
+
+                <h1 class="fw-bold text-success mb-3">{{ recipe.name }}</h1>
+                
+                <!-- Информация о порции -->
+                {% if recipe.portion_multiplier and recipe.portion_multiplier != 1 %}
+                <div class="alert alert-warning mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle me-2 fs-5"></i>
+                        <div>
+                            <strong>Порция скорректирована!</strong><br>
+                            <small>
+                                Для соответствия вашему плану питания порция увеличена до <strong>{{ recipe.base_portion }}</strong>
+                                (в {{ recipe.portion_multiplier }} раз от базовой)
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Nutrition Info -->
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h3 class="text-success fw-bold">{{ recipe.calories }}</h3>
+                            <small class="text-muted">Ккал</small>
+                            {% if recipe.original_calories and recipe.portion_multiplier != 1 %}
+                            <br>
+                            <small class="text-muted">(базовые: {{ recipe.original_calories }} ккал)</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h3 class="text-success fw-bold">{{ recipe.cooking_time }}</h3>
+                            <small class="text-muted">Минут</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nutrition Badges -->
+                <div class="mb-4">
+                    <span class="badge bg-danger me-2 p-2">
+                        <i class="bi bi-droplet me-1"></i>{{ recipe.protein }}г белка
+                    </span>
+                    <span class="badge bg-warning me-2 p-2">
+                        <i class="bi bi-droplet-half me-1"></i>{{ recipe.fat }}г жиров
+                    </span>
+                    <span class="badge bg-info me-2 p-2">
+                        <i class="bi bi-droplet-fill me-1"></i>{{ recipe.carbs }}г углеводов
+                    </span>
+                </div>
+
+                <!-- Difficulty -->
+                <div class="mb-4">
+                    <strong>Сложность:</strong>
+                    <span class="badge {% if recipe.difficulty == 'easy' %}bg-success{% elif recipe.difficulty == 'medium' %}bg-warning{% else %}bg-danger{% endif %}">
+                        {% if recipe.difficulty == 'easy' %}Легко
+                        {% elif recipe.difficulty == 'medium' %}Средне
+                        {% else %}Сложно{% endif %}
+                    </span>
+                </div>
+
+                <!-- Portion Info -->
+                <div class="mb-4">
+                    <strong>Порция:</strong>
+                    <span class="badge bg-secondary">{{ recipe.base_portion }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ingredients and Instructions -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="nutri-card h-100">
+                <div class="card-header-custom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-list-check me-2"></i>Ингредиенты
+                        {% if recipe.portion_multiplier and recipe.portion_multiplier != 1 %}
+                        <span class="badge bg-warning ms-2">скорректировано</span>
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for ingredient in recipe.ingredients.splitlines %}
+                            {% if ingredient.strip %}
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    {{ ingredient.strip }}
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                    
+                    <!-- Показать оригинальные ингредиенты для сравнения -->
+                    {% if recipe.original_ingredients and recipe.portion_multiplier != 1 %}
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="text-muted mb-2">
+                            <i class="bi bi-clock-history me-1"></i>Базовые ингредиенты (1 порция):
+                        </h6>
+                        <ul class="list-unstyled small">
+                            {% for ingredient in recipe.original_ingredients.splitlines %}
+                                {% if ingredient.strip %}
+                                    <li class="mb-1 text-muted">
+                                        <i class="bi bi-dash me-2"></i>
+                                        {{ ingredient.strip }}
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="nutri-card h-100">
+                <div class="card-header-custom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-journal-text me-2"></i>Способ приготовления
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <ol class="ps-3">
+                        {% for step in recipe.instructions.splitlines %}
+                            {% if step.strip %}
+                                <li class="mb-3">{{ step.strip }}</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                    
+                    <!-- Советы по приготовлению увеличенной порции -->
+                    {% if recipe.portion_multiplier and recipe.portion_multiplier > 1.2 %}
+                    <div class="mt-4 p-3 bg-info bg-opacity-10 rounded">
+                        <h6 class="text-info mb-2">
+                            <i class="bi bi-lightbulb me-1"></i>Совет для увеличенной порции:
+                        </h6>
+                        <p class="small text-muted mb-0">
+                            При приготовлении увеличенной порции может потребоваться:
+                            <br>• Увеличить время приготовления на 10-15%
+                            <br>• Использовать посуду большего объема
+                            <br>• Более интенсивное перемешивание
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Similar Recipes -->
+    {% if similar_recipes %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="nutri-card">
+                <div class="card-header-custom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-lightning me-2"></i>Похожие рецепты
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for similar in similar_recipes %}
+                        <div class="col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                {% if similar.image %}
+                                    <img src="{{ similar.image.url }}" class="card-img-top" alt="{{ similar.name }}" style="height: 150px; object-fit: cover;">
+                                {% else %}
+                                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                                        <i class="bi bi-{% if similar.meal_type == 'breakfast' %}cup-hot{% elif similar.meal_type == 'lunch' %}egg-fried{% elif similar.meal_type == 'snack' %}cup-straw{% else %}moon-stars{% endif %} text-muted" style="font-size: 2rem;"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ similar.name }}</h6>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-success">{{ similar.calories }} ккал</span>
+                                        <a href="{% url 'recipe_detail' similar.id %}" class="btn btn-sm btn-outline-success">Подробнее</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Back Button -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <a href="javascript:history.back()" class="btn btn-nutri-outline btn-lg">
+                <i class="bi bi-arrow-left me-2"></i>Назад
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
