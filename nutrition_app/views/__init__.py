@@ -7,6 +7,6 @@ from .main_views import index
 # Экспортируем все функции
 __all__ = [
     'register', 'user_login', 'user_logout', 'profile_setup', 'dashboard',
-    'calculate_calories', 'week_plan', 'day_plan', 'recipe_detail', 'utils', index
+    'calculate_calories', 'week_plan', 'day_plan', 'recipe_detail', 'utils', 'index'
 
 ]

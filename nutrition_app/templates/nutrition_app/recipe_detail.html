@@ -1,5 +1,6 @@
 {% extends 'nutrition_app/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block content %}
 <div class="container py-5">
@@ -18,55 +19,75 @@
 
     <!-- Recipe Header -->
     <div class="row mb-5">
+        <!-- Image Column - Professional Design -->
         <div class="col-lg-6">
-            {% if recipe.image %}
-                <img src="{{ recipe.image.url }}" alt="{{ recipe.name }}" 
-                     class="img-fluid rounded shadow" style="max-height: 400px; object-fit: cover;">
-            {% else %}
-                <div class="d-flex align-items-center justify-content-center bg-light rounded shadow" 
-                     style="height: 400px;">
-                    <i class="bi bi-{% if recipe.meal_type == 'breakfast' %}cup-hot{% elif recipe.meal_type == 'lunch' %}egg-fried{% elif recipe.meal_type == 'snack' %}cup-straw{% else %}moon-stars{% endif %} text-muted" style="font-size: 6rem;"></i>
-                </div>
-            {% endif %}
+            <div class="recipe-image-container">
+                {% if recipe.image %}
+                    <div class="image-wrapper">
+                        <img src="{{ recipe.image.url }}" alt="{{ recipe.name }}" 
+                             class="recipe-main-image img-fluid rounded shadow">
+                    </div>
+                {% else %}
+                    <!-- Professional Placeholder -->
+                    <div class="recipe-placeholder rounded shadow">
+                        <div class="placeholder-content">
+                            <i class="bi bi-{% if recipe.meal_type == 'breakfast' %}cup-hot-fill
+                                          {% elif recipe.meal_type == 'lunch' %}egg-fried
+                                          {% elif recipe.meal_type == 'snack' %}cup-straw
+                                          {% else %}moon-stars-fill{% endif %} placeholder-icon"></i>
+                            <div class="placeholder-text">
+                                <h4>{{ recipe.name }}</h4>
+                                <p>Изображение рецепта</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
         </div>
+
+        <!-- Content Column -->
         <div class="col-lg-6">
-            <div class="ps-lg-4">
+            <div class="recipe-content ps-lg-4">
                 <!-- Meal Type Badge -->
-                <span class="badge 
-                    {% if recipe.meal_type == 'breakfast' %}bg-warning
-                    {% elif recipe.meal_type == 'lunch' %}bg-success
-                    {% elif recipe.meal_type == 'snack' %}bg-info
-                    {% else %}bg-primary{% endif %} mb-3">
-                    {% if recipe.meal_type == 'breakfast' %}Завтрак
-                    {% elif recipe.meal_type == 'lunch' %}Обед
-                    {% elif recipe.meal_type == 'snack' %}Перекус
-                    {% else %}Ужин{% endif %}
-                </span>
+                <div class="mb-3">
+                    <span class="badge 
+                        {% if recipe.meal_type == 'breakfast' %}bg-warning
+                        {% elif recipe.meal_type == 'lunch' %}bg-success
+                        {% elif recipe.meal_type == 'snack' %}bg-info
+                        {% else %}bg-primary{% endif %} fs-6">
+                        <i class="bi bi-{% if recipe.meal_type == 'breakfast' %}sun
+                                      {% elif recipe.meal_type == 'lunch' %}cloud-sun
+                                      {% elif recipe.meal_type == 'snack' %}cloud
+                                      {% else %}moon{% endif %} me-1"></i>
+                        {% if recipe.meal_type == 'breakfast' %}Завтрак
+                        {% elif recipe.meal_type == 'lunch' %}Обед
+                        {% elif recipe.meal_type == 'snack' %}Перекус
+                        {% else %}Ужин{% endif %}
+                    </span>
+                </div>
 
                 <h1 class="fw-bold text-success mb-3">{{ recipe.name }}</h1>
                 
-                <!-- Информация о порции -->
+                <!-- Portion Adjustment Alert -->
                 {% if recipe.portion_multiplier and recipe.portion_multiplier != 1 %}
                 <div class="alert alert-warning mb-4">
                     <div class="d-flex align-items-center">
-                        <i class="bi bi-info-circle me-2 fs-5"></i>
+                        <i class="bi bi-arrow-up-circle me-3 fs-5"></i>
                         <div>
-                            <strong>Порция скорректирована!</strong><br>
-                            <small>
-                                Для соответствия вашему плану питания порция увеличена до <strong>{{ recipe.base_portion }}</strong>
-                                (в {{ recipe.portion_multiplier }} раз от базовой)
-                            </small>
+                            <strong>Порция адаптирована под ваш план</strong>
+                            <div class="small">Увеличена до {{ recipe.base_portion }} (×{{ recipe.portion_multiplier }})</div>
                         </div>
                     </div>
                 </div>
                 {% endif %}
                 
-                <!-- Nutrition Info -->
+                <!-- Nutrition Cards -->
                 <div class="row mb-4">
                     <div class="col-6">
-                        <div class="text-center p-3 bg-light rounded">
-                            <h3 class="text-success fw-bold">{{ recipe.calories }}</h3>
-                            <small class="text-muted">Ккал</small>
+                        <div class="text-center p-3 bg-light rounded h-100">
+                            <i class="bi bi-fire fs-1 text-success mb-2 d-block"></i>
+                            <h3 class="text-success fw-bold mb-1">{{ recipe.calories }}</h3>
+                            <small class="text-muted">Калории</small>
                             {% if recipe.original_calories and recipe.portion_multiplier != 1 %}
                             <br>
                             <small class="text-muted">(базовые: {{ recipe.original_calories }} ккал)</small>
@@ -74,40 +95,74 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="text-center p-3 bg-light rounded">
-                            <h3 class="text-success fw-bold">{{ recipe.cooking_time }}</h3>
+                        <div class="text-center p-3 bg-light rounded h-100">
+                            <i class="bi bi-clock fs-1 text-success mb-2 d-block"></i>
+                            <h3 class="text-success fw-bold mb-1">{{ recipe.cooking_time }}</h3>
                             <small class="text-muted">Минут</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- Nutrition Badges -->
+                <!-- Macros Badges -->
                 <div class="mb-4">
-                    <span class="badge bg-danger me-2 p-2">
-                        <i class="bi bi-droplet me-1"></i>{{ recipe.protein }}г белка
-                    </span>
-                    <span class="badge bg-warning me-2 p-2">
-                        <i class="bi bi-droplet-half me-1"></i>{{ recipe.fat }}г жиров
-                    </span>
-                    <span class="badge bg-info me-2 p-2">
-                        <i class="bi bi-droplet-fill me-1"></i>{{ recipe.carbs }}г углеводов
-                    </span>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-danger p-3">
+                            <i class="bi bi-droplet me-1"></i>Белки: {{ recipe.protein }}г
+                        </span>
+                        <span class="badge bg-warning p-3">
+                            <i class="bi bi-droplet-half me-1"></i>Жиры: {{ recipe.fat }}г
+                        </span>
+                        <span class="badge bg-info p-3">
+                            <i class="bi bi-droplet-fill me-1"></i>Углеводы: {{ recipe.carbs }}г
+                        </span>
+                    </div>
                 </div>
 
-                <!-- Difficulty -->
-                <div class="mb-4">
-                    <strong>Сложность:</strong>
-                    <span class="badge {% if recipe.difficulty == 'easy' %}bg-success{% elif recipe.difficulty == 'medium' %}bg-warning{% else %}bg-danger{% endif %}">
-                        {% if recipe.difficulty == 'easy' %}Легко
-                        {% elif recipe.difficulty == 'medium' %}Средне
-                        {% else %}Сложно{% endif %}
-                    </span>
-                </div>
-
-                <!-- Portion Info -->
-                <div class="mb-4">
-                    <strong>Порция:</strong>
-                    <span class="badge bg-secondary">{{ recipe.base_portion }}</span>
+                <!-- Difficulty & Portions -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <strong class="d-block mb-2">Сложность:</strong>
+                        <span class="badge {% if recipe.difficulty == 'easy' %}bg-success{% elif recipe.difficulty == 'medium' %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                            <i class="bi bi-{% if recipe.difficulty == 'easy' %}emoji-smile{% elif recipe.difficulty == 'medium' %}emoji-neutral{% else %}emoji-frown{% endif %} me-1"></i>
+                            {% if recipe.difficulty == 'easy' %}Легко
+                            {% elif recipe.difficulty == 'medium' %}Средне
+                            {% else %}Сложно{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <strong class="d-block mb-2">Порции:</strong>
+                        <div class="portions-control-elegant">
+                            <form method="get" class="d-flex align-items-center justify-content-center">
+                                <button type="submit" name="portions" value="{{ current_portions|add:'-1' }}" 
+                                        class="btn btn-outline-success btn-control {% if current_portions <= 1 %}disabled{% endif %}"
+                                        {% if current_portions <= 1 %}disabled{% endif %}>
+                                    <i class="bi bi-dash-lg"></i>
+                                </button>
+                                
+                                <div class="portion-count mx-3">
+                                    <span class="count fs-4 fw-bold">{{ current_portions }}</span>
+                                    <div class="label small text-muted">порци{{ current_portions|pluralize:"я,и" }}</div>
+                                </div>
+                                
+                                <button type="submit" name="portions" value="{{ current_portions|add:'1' }}" 
+                                        class="btn btn-outline-success btn-control {% if current_portions >= 10 %}disabled{% endif %}"
+                                        {% if current_portions >= 10 %}disabled{% endif %}>
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                                
+                                <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+                            </form>
+                            
+                            {% if current_portions > 1 %}
+                            <div class="text-center mt-2">
+                                <small class="text-muted">
+                                    Всего: <strong>{{ recipe.calories|multiply:current_portions }} ккал</strong>
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -115,13 +170,13 @@
 
     <!-- Ingredients and Instructions -->
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-6 mb-4">
             <div class="nutri-card h-100">
                 <div class="card-header-custom">
                     <h4 class="mb-0">
                         <i class="bi bi-list-check me-2"></i>Ингредиенты
                         {% if recipe.portion_multiplier and recipe.portion_multiplier != 1 %}
-                        <span class="badge bg-warning ms-2">скорректировано</span>
+                        <span class="badge bg-warning ms-2">×{{ recipe.portion_multiplier }}</span>
                         {% endif %}
                     </h4>
                 </div>
@@ -136,29 +191,11 @@
                             {% endif %}
                         {% endfor %}
                     </ul>
-                    
-                    <!-- Показать оригинальные ингредиенты для сравнения -->
-                    {% if recipe.original_ingredients and recipe.portion_multiplier != 1 %}
-                    <div class="mt-4 p-3 bg-light rounded">
-                        <h6 class="text-muted mb-2">
-                            <i class="bi bi-clock-history me-1"></i>Базовые ингредиенты (1 порция):
-                        </h6>
-                        <ul class="list-unstyled small">
-                            {% for ingredient in recipe.original_ingredients.splitlines %}
-                                {% if ingredient.strip %}
-                                    <li class="mb-1 text-muted">
-                                        <i class="bi bi-dash me-2"></i>
-                                        {{ ingredient.strip }}
-                                    </li>
-                                {% endif %}
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
+        
+        <div class="col-lg-6 mb-4">
             <div class="nutri-card h-100">
                 <div class="card-header-custom">
                     <h4 class="mb-0">
@@ -173,21 +210,6 @@
                             {% endif %}
                         {% endfor %}
                     </ol>
-                    
-                    <!-- Советы по приготовлению увеличенной порции -->
-                    {% if recipe.portion_multiplier and recipe.portion_multiplier > 1.2 %}
-                    <div class="mt-4 p-3 bg-info bg-opacity-10 rounded">
-                        <h6 class="text-info mb-2">
-                            <i class="bi bi-lightbulb me-1"></i>Совет для увеличенной порции:
-                        </h6>
-                        <p class="small text-muted mb-0">
-                            При приготовлении увеличенной порции может потребоваться:
-                            <br>• Увеличить время приготовления на 10-15%
-                            <br>• Использовать посуду большего объема
-                            <br>• Более интенсивное перемешивание
-                        </p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -241,4 +263,113 @@
         </div>
     </div>
 </div>
+
+<style>
+.recipe-image-container {
+    position: relative;
+}
+
+.image-wrapper {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.recipe-main-image {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+    display: block;
+}
+
+/* Professional Placeholder */
+.recipe-placeholder {
+    height: 400px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.placeholder-content {
+    text-align: center;
+    color: white;
+    z-index: 2;
+}
+
+.placeholder-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+.placeholder-text h4 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.placeholder-text p {
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* Elegant Portions Control */
+.btn-control {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #28a745;
+    background: white;
+    color: #28a745;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.btn-control:hover:not(.disabled) {
+    background: #28a745;
+    color: white;
+    transform: scale(1.1);
+}
+
+.portion-count {
+    text-align: center;
+}
+
+.portion-count .count {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2c3e50;
+    display: block;
+    line-height: 1;
+}
+
+.portion-count .label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+/* Card Styles */
+.nutri-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    background: white;
+}
+
+.card-header-custom {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+.card-header-custom h4 {
+    margin: 0;
+    font-weight: 600;
+}
+</style>
 {% endblock %}

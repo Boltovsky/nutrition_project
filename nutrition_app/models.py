@@ -51,6 +51,7 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Профиль {self.user.username}"
+
     class Meta:
         verbose_name = "Профиль пользователя"
         verbose_name_plural = "Профили пользователей"
@@ -88,7 +89,21 @@ class Recipe(models.Model):
         default=15, verbose_name="Время приготовления (мин)")
     difficulty = models.CharField(
         max_length=20, choices=DIFFICULTY_CHOICES, default='easy', verbose_name="Сложность")
-    base_portion = models.CharField(max_length=100, default="1 порция", verbose_name="Базовая порция")
+    base_portion = models.CharField(
+        max_length=100, default="1 порция", verbose_name="Базовая порция")
+
+    @property
+    def ingredients_list(self):
+        """Возвращает список ингредиентов с оригинальным и скорректированным текстом"""
+        ingredients = []
+        for line in self.ingredients.split('\n'):
+            line = line.strip()
+            if line:
+                ingredients.append({
+                    'text': line,
+                    'original_text': getattr(self, 'original_ingredients', line)
+                })
+        return ingredients
 
     def __str__(self):
         return f"{self.name} ({self.get_meal_type_display()})"
