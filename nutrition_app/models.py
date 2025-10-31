@@ -155,3 +155,32 @@ class UserMealPlan(models.Model):
         verbose_name = "План питания пользователя"
         verbose_name_plural = "Планы питания пользователей"
         ordering = ['date', 'meal_type']
+
+
+class UserNotificationSettings(models.Model):
+    """Настройки уведомлений пользователя"""
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notification_settings'
+    )
+
+    # Основные настройки
+    is_subscribed = models.BooleanField(
+        default=True, verbose_name="Подписка на уведомления")
+
+    # Время уведомлений (будем использовать фиксированное для простоты)
+    send_morning_reminder = models.BooleanField(
+        default=True, verbose_name="Утренние напоминания")
+    send_evening_reminder = models.BooleanField(
+        default=True, verbose_name="Вечерние напоминания")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Настройки уведомлений {self.user.username}"
+
+    class Meta:
+        verbose_name = "Настройка уведомлений"
+        verbose_name_plural = "Настройки уведомлений"

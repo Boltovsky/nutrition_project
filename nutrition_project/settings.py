@@ -5,6 +5,7 @@ Django settings for nutrition_project project.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from celery.schedules import crontab
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +29,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'nutrition_app',
     'telegram_bot',
+    'django_celery_results',
+    'django_celery_beat',
 ]
 
 # Используем кастомную модель пользователя
@@ -89,8 +92,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'ru-ru'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Krasnoyarsk'
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
@@ -112,3 +116,22 @@ LOGOUT_REDIRECT_URL = 'index'
 LOGIN_URL = 'login'
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 SITE_URL = os.getenv('SITE_URL')
+
+# Celery Configuration
+CELERY_BROKER_URL = 'memory://'
+CELERY_RESULT_BACKEND = 'cache+memory://'
+CELERY_TASK_ALWAYS_EAGER = True  # Задачи выполняются синхронно
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Krasnoyarsk'
+CELERY_ENABLE_UTC = False
+
+# Celery Beat Schedule
+CELERY_BEAT_SCHEDULE = {
+    'check-all-reminders': {
+        'task': 'telegram_bot.tasks.check_all_reminders',
+        'schedule': 30.0,  # Каждые 30 секунд
+    },
+}
