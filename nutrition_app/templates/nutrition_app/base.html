@@ -22,7 +22,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'nutrition_app/css/style.css' %}" />
 
-{% block extra_css %}{% endblock %}
+    {% block extra_css %}{% endblock %}
   </head>
   <body class="d-flex flex-column min-vh-100">
     <!-- Navigation -->
@@ -40,52 +40,80 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-    <ul class="navbar-nav ms-auto">
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'index' %}">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'index' %}">
                 <i class="bi bi-house me-1"></i>Главная
-            </a>
-        </li>
-        {% if user.is_authenticated %}
-            <li class="nav-item">
+              </a>
+            </li>
+            
+            {% if user.is_authenticated %}
+              <!-- Для авторизованных пользователей -->
+              <li class="nav-item">
                 <a class="nav-link" href="{% url 'dashboard' %}">
-                    <i class="bi bi-speedometer2 me-1"></i>Мой профиль
+                  <i class="bi bi-speedometer2 me-1"></i>Мой профиль
                 </a>
-            </li>
-            <li class="nav-item">
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" href="{% url 'week_plan' %}">
-                    <i class="bi bi-calendar-week me-1"></i>План питания
+                  <i class="bi bi-calendar-week me-1"></i>План питания
                 </a>
-            </li>
-            <li class="nav-item dropdown">
+              </li>
+              
+              <!-- Кнопка привязки Telegram -->
+              <li class="nav-item">
+                <a class="nav-link position-relative" href="{% url 'telegram_link' %}">
+                  <i class="bi bi-telegram me-1"></i>Telegram
+                  {% if user.telegram_exists %}
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle">
+                      <span class="visually-hidden">Telegram привязан</span>
+                    </span>
+                  {% else %}
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-warning border border-light rounded-circle">
+                      <span class="visually-hidden">Telegram не привязан</span>
+                    </span>
+                  {% endif %}
+                </a>
+              </li>
+              
+              <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle me-1"></i>{{ user.first_name }}
+                  <i class="bi bi-person-circle me-1"></i>{{ user.first_name|default:user.username }}
                 </a>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{% url 'profile_setup' %}">Настройки профиля</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{% url 'logout' %}">Выйти</a></li>
+                  <li><a class="dropdown-item" href="{% url 'profile_setup' %}">
+                    <i class="bi bi-gear me-1"></i>Настройки профиля
+                  </a></li>
+                  <li><a class="dropdown-item" href="{% url 'telegram_link' %}">
+                    <i class="bi bi-telegram me-1"></i>Привязать Telegram
+                  </a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{% url 'logout' %}">
+                    <i class="bi bi-box-arrow-right me-1"></i>Выйти
+                  </a></li>
                 </ul>
-            </li>
-        {% else %}
-            <li class="nav-item">
+              </li>
+              
+            {% else %}
+              <!-- Для неавторизованных пользователей -->
+              <li class="nav-item">
                 <a class="nav-link" href="{% url 'calculate_calories' %}">
-                    <i class="bi bi-calculator me-1"></i>Расчет калорий
+                  <i class="bi bi-calculator me-1"></i>Расчет калорий
                 </a>
-            </li>
-            <li class="nav-item">
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" href="{% url 'login' %}">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Войти
+                  <i class="bi bi-box-arrow-in-right me-1"></i>Войти
                 </a>
-            </li>
-            <li class="nav-item">
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" href="{% url 'register' %}">
-                    <i class="bi bi-person-plus me-1"></i>Регистрация
+                  <i class="bi bi-person-plus me-1"></i>Регистрация
                 </a>
-            </li>
-        {% endif %}
-    </ul>
-</div>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
       </div>
     </nav>
 

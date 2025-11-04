@@ -1,3 +1,7 @@
+from .models import TelegramLinkToken
+import secrets
+from datetime import timedelta
+from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import CustomUser
@@ -103,3 +107,22 @@ class UserProfileForm(forms.ModelForm):
             'weight': 'Введите ваш вес в килограммах',
             'height': 'Введите ваш рост в сантиметрах',
         }
+
+
+class TelegramLinkForm(forms.Form):
+    def generate_token(self, user):
+        """Генерирует уникальный токен для привязки"""
+        # Удаляем старые токены пользователя
+        TelegramLinkToken.objects.filter(user=user).delete()
+
+        # Создаем новый токен
+        token = secrets.token_urlsafe(16)
+        expires_at = timezone.now() + timedelta(minutes=30)
+
+        TelegramLinkToken.objects.create(
+            user=user,
+            token=token,
+            expires_at=expires_at
+        )
+
+        return token

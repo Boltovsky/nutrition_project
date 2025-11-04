@@ -1,0 +1,98 @@
+{% extends 'nutrition_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4>🔗 Привязка Telegram аккаунта</h4>
+                </div>
+                <div class="card-body">
+                    
+                    {% if has_telegram %}
+                    <!-- Если Telegram уже привязан -->
+                    <div class="alert alert-success">
+                        <h5>✅ Telegram аккаунт привязан</h5>
+                        <p><strong>Telegram ID:</strong> {{ telegram_info.telegram_id }}</p>
+                        <p><strong>Username:</strong> @{{ telegram_info.username|default:"не указан" }}</p>
+                        <p><strong>Имя:</strong> {{ telegram_info.first_name|default:"не указано" }}</p>
+                        
+                        <form method="post" action="{% url 'telegram_unlink' %}" class="mt-3">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                🔗 Отвязать Telegram
+                            </button>
+                        </form>
+                    </div>
+                    
+                    {% else %}
+                    <!-- Если Telegram не привязан -->
+                    
+                    {% if active_token %}
+                    <!-- Есть активный токен -->
+                    <div class="alert alert-info">
+                        <h5>🔄 Активный токен для привязки</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control font-monospace" 
+                                   value="{{ active_token.token }}" readonly 
+                                   id="tokenInput">
+                            <button class="btn btn-outline-secondary" type="button" 
+                                    onclick="copyToken()">
+                                📋 Копировать
+                            </button>
+                        </div>
+                        <p class="text-muted small">
+                            ⏰ Токен действителен до: {{ active_token.expires_at|date:"H:i" }}
+                        </p>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6>📱 Инструкция по привязке:</h6>
+                        <ol class="mb-0">
+                            <li>Откройте нашего бота в Telegram: <strong>@YourNutritionBot</strong></li>
+                            <li>Отправьте команду: <code>/connect {{ active_token.token }}</code></li>
+                            <li>Аккаунт будет автоматически привязан!</li>
+                        </ol>
+                    </div>
+                    
+                    {% else %}
+                    <!-- Нет активного токена -->
+                    <div class="alert alert-light">
+                        <h5>🔐 Привяжите Telegram для уведомлений</h5>
+                        <p>После привязки вы сможете получать уведомления о питании прямо в Telegram!</p>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">
+                                🔗 Сгенерировать токен привязки
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                    
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToken() {
+    const tokenInput = document.getElementById('tokenInput');
+    tokenInput.select();
+    document.execCommand('copy');
+    
+    // Показываем уведомление
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '✅ Скопировано!';
+    setTimeout(() => {
+        button.textContent = originalText;
+    }, 2000);
+}
+</script>
+{% endblock %}

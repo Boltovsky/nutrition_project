@@ -167,7 +167,7 @@ async def _toggle_setting(update: Update, setting_type, setting_name):
 
     await update.callback_query.edit_message_text(f"✅ {setting_name} {status}")
     await asyncio.sleep(1)
-    await notifications_settings(update, context)
+    await notifications_settings(update)
 
 # ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
 
@@ -291,3 +291,82 @@ def _build_settings_keyboard():
             "🔄 Статус", callback_data="notifications_status")],
         [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]
     ]
+
+
+async def connect_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Привязка Telegram аккаунта к учетной записи"""
+    if not context.args:
+        message = (
+            "🔗 *Привязка аккаунта*\n\n"
+            "Для привязки Telegram к вашей учетной записи:\n\n"
+            "1. Зайдите в личный кабинет на сайте\n"
+            "2. В разделе 'Привязка Telegram' получите токен\n"
+            "3. Отправьте команду:\n"
+            "`/connect ВАШ_ТОКЕН`\n\n"
+            "Пример: `/connect abc123def456`"
+        )
+        await update.message.reply_text(message, parse_mode='Markdown')
+        return
+
+    token = context.args[0]
+    await _process_telegram_link(update, token)
+
+
+async def _process_telegram_link(update: Update, token: str):
+    """Обработка привязки Telegram аккаунта"""
+    from nutrition_app.models import TelegramLinkToken, TelegramUser
+    from asgiref.sync import sync_to_async
+
+    @sync_to_async
+    def link_telegram_account(telegram_id, token_str):
+        try:
+            # Ищем валидный токен
+            link_token = TelegramLinkToken.objects.filter(
+                token=token_str,
+                is_used=False,
+                expires_at__gt=timezone.now()
+            ).first()
+
+            if not link_token:
+                return None, "❌ Токен не найден или просрочен"
+
+            # Проверяем, не привязан ли уже этот Telegram
+            if TelegramUser.objects.filter(telegram_id=telegram_id).exists():
+                return None, "❌ Этот Telegram аккаунт уже привязан"
+
+            # Создаем привязку
+            TelegramUser.objects.create(
+                user=link_token.user,
+                telegram_id=telegram_id,
+                chat_id=update.effective_chat.id,
+                username=update.effective_user.username,
+                first_name=update.effective_user.first_name,
+                last_name=update.effective_user.last_name,
+                is_subscribed=True
+            )
+
+            # Помечаем токен как использованный
+            link_token.is_used = True
+            link_token.save()
+
+            return link_token.user, "✅ Аккаунт успешно привязан!"
+
+        except Exception as e:
+            return None, f"❌ Ошибка привязки: {str(e)}"
+
+    user, result_message = await link_telegram_account(update.effective_user.id, token)
+
+    if user:
+        # Дополнительное сообщение при успешной привязке
+        success_message = (
+            f"{result_message}\n\n"
+            f"👋 Привет, {user.first_name}!\n\n"
+            f"Теперь вы будете получать:\n"
+            f"• 📅 Уведомления о меню питания\n"
+            f"• 🔔 Напоминания о приемах пищи\n"
+            f"• 📊 Статистику и советы\n\n"
+            f"Настройте уведомления командой: /notifications"
+        )
+        await update.message.reply_text(success_message, parse_mode='Markdown')
+    else:
+        await update.message.reply_text(result_message)

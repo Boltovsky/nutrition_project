@@ -154,13 +154,6 @@
                                 <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
                             </form>
                             
-                            {% if current_portions > 1 %}
-                            <div class="text-center mt-2">
-                                <small class="text-muted">
-                                    Всего: <strong>{{ recipe.calories|multiply:current_portions }} ккал</strong>
-                                </small>
-                            </div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>

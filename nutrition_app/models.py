@@ -1,3 +1,4 @@
+from django.utils import timezone
 from tabnanny import verbose
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -184,3 +185,23 @@ class UserNotificationSettings(models.Model):
     class Meta:
         verbose_name = "Настройка уведомлений"
         verbose_name_plural = "Настройки уведомлений"
+
+
+class TelegramLinkToken(models.Model):
+    """Временные токены для привязки Telegram аккаунтов"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
+    token = models.CharField(max_length=100, unique=True)
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def is_valid(self):
+        return not self.is_used and timezone.now() < self.expires_at
+
+    def __str__(self):
+        return f"{self.user.username} - {self.token}"
+
+    class Meta:
+        verbose_name = "Токен привязки Telegram"
+        verbose_name_plural = "Токены привязки Telegram"

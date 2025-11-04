@@ -257,19 +257,22 @@ def _optimize_day_with_portions(breakfast_target, lunch_target, snack_target, di
 
 
 def _smart_portion_adjustment(breakfast, lunch, snack, dinner, total_target):
-    """Умная корректировка порций для точного достижения цели"""
+    """Умная корректировка порций для точного достижения цели (±5%)"""
     meals = [breakfast, lunch, snack, dinner]
+
+    # Рассчитываем текущую калорийность
     current_calories = sum(float(meal.calories) for meal in meals)
 
-    # Если калорийность уже близка, не корректируем
-    if abs(current_calories - total_target) <= total_target * 0.02:
+    # Если уже в пределах ±5% от цели - не корректируем
+    tolerance = total_target * 0.05  # 5% допуск
+    if abs(current_calories - total_target) <= tolerance:
         return breakfast, lunch, snack, dinner, current_calories
 
     # Рассчитываем необходимую корректировку
     adjustment_factor = total_target / current_calories if current_calories > 0 else 1
 
-    # Ограничиваем диапазон корректировки (0.8 - 1.5)
-    adjustment_factor = max(0.8, min(adjustment_factor, 1.5))
+    # Ограничиваем диапазон корректировки (0.7 - 1.5) чтобы не было экстремальных порций
+    adjustment_factor = max(0.7, min(adjustment_factor, 1.5))
 
     # Применяем корректировку ко всем приемам пищи
     adjusted_meals = []
@@ -279,7 +282,50 @@ def _smart_portion_adjustment(breakfast, lunch, snack, dinner, total_target):
 
     adjusted_calories = sum(float(meal.calories) for meal in adjusted_meals)
 
+    # Проверяем, что после корректировки мы в пределах допуска
+    final_tolerance = total_target * 0.05
+    if abs(adjusted_calories - total_target) > final_tolerance:
+        # Если все еще не в пределах допуска, делаем точную подстройку
+        return _precise_calorie_adjustment(adjusted_meals, total_target)
+
     return adjusted_meals[0], adjusted_meals[1], adjusted_meals[2], adjusted_meals[3], adjusted_calories
+
+
+def _precise_calorie_adjustment(meals, total_target):
+    """Точная подстройка калорийности путем изменения порций отдельных блюд"""
+    current_calories = sum(float(meal.calories) for meal in meals)
+    calorie_difference = total_target - current_calories
+
+    # Сортируем блюда по калорийности (сначала самые калорийные)
+    sorted_meals = sorted(meals, key=lambda x: float(x.calories), reverse=True)
+
+    # Распределяем разницу по самым калорийным блюдам
+    for meal in sorted_meals:
+        if abs(calorie_difference) < 10:  # Если осталась маленькая разница - выходим
+            break
+
+        meal_calories = float(meal.calories)
+        if meal_calories > 0:
+            # Рассчитываем корректировку для этого блюда
+            # 50% разницы на это блюдо
+            portion_adjustment = 1 + (calorie_difference / meal_calories * 0.5)
+            # Ограничиваем изменения
+            portion_adjustment = max(0.8, min(portion_adjustment, 1.2))
+
+            adjusted_meal = _adjust_portion(meal, portion_adjustment)
+            adjusted_calories = float(adjusted_meal.calories)
+
+            # Обновляем разницу
+            calorie_difference -= (adjusted_calories - meal_calories)
+
+            # Заменяем блюдо в оригинальном списке
+            for i, original_meal in enumerate(meals):
+                if original_meal.id == meal.id:
+                    meals[i] = adjusted_meal
+                    break
+
+    final_calories = sum(float(meal.calories) for meal in meals)
+    return meals[0], meals[1], meals[2], meals[3], final_calories
 
 
 def generate_optimized_weekly_meal_plan(daily_calories):

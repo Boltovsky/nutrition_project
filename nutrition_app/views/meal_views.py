@@ -1,3 +1,7 @@
+from datetime import timedelta
+from django.utils import timezone
+from django.contrib import messages
+from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from ..models import UserProfile
 from .utils import generate_optimized_weekly_meal_plan, _get_recipe_from_session, _adjust_portion
@@ -69,7 +73,6 @@ def week_plan(request):
     if request.user.is_authenticated:
         # Для авторизованных пользователей используем данные из профиля
         profile, created = UserProfile.objects.get_or_create(user=request.user)
-
         daily_calories = profile.daily_calories
         user_data = {
             'goal': request.user.goal,
@@ -80,15 +83,30 @@ def week_plan(request):
             'gender': request.user.gender
         }
 
-        # Генерируем ОПТИМИЗИРОВАННЫЙ рацион на неделю
-        weekly_meal_plan = generate_optimized_weekly_meal_plan(daily_calories)
-        request.session['weekly_meal_plan'] = weekly_meal_plan
+        # Определяем начало текущей недели (понедельник)
+        today = timezone.now().date()
+        current_week_start = today - timedelta(days=today.weekday())
+        weekly_plan_key = f'weekly_plan_{current_week_start}_{request.user.id}'
+
+        # Проверяем, есть ли сохраненный план на текущую неделю
+        if weekly_plan_key not in request.session:
+            # Генерируем НОВЫЙ оптимизированный рацион на неделю
+            weekly_meal_plan = generate_optimized_weekly_meal_plan(
+                daily_calories)
+            request.session[weekly_plan_key] = weekly_meal_plan
+            request.session['weekly_plan_generated'] = today.isoformat()
+            plan_generated_new = True
+        else:
+            # Используем сохраненный план
+            weekly_meal_plan = request.session[weekly_plan_key]
+            plan_generated_new = False
 
     else:
-        # Для неавторизованных используем сессию
+        # Для неавторизованных используем сессию (старая логика)
         weekly_meal_plan = request.session.get('weekly_meal_plan')
         daily_calories = request.session.get('daily_calories', 2000)
         user_data = request.session.get('user_data', {})
+        plan_generated_new = False
 
         if not weekly_meal_plan or not daily_calories:
             return redirect('calculate_calories')
@@ -97,19 +115,29 @@ def week_plan(request):
     total_week_calories = 0
     total_week_target = 0
     days_with_data = 0
+    days_within_tolerance = 0  # Дни в пределах ±5%
 
     for day_data in weekly_meal_plan.values():
-        if day_data.get('total_calories', 0) > 0:
-            total_week_calories += day_data.get('total_calories', 0)
-            total_week_target += day_data.get('target_calories',
-                                              daily_calories)
+        day_target = day_data.get('target_calories', daily_calories)
+        day_actual = day_data.get('total_calories', 0)
+
+        if day_actual > 0:
+            total_week_calories += day_actual
+            total_week_target += day_target
             days_with_data += 1
+
+            # Проверяем, в пределах ли 5% допуска
+            tolerance = day_target * 0.05
+            if abs(day_actual - day_target) <= tolerance:
+                days_within_tolerance += 1
 
     if days_with_data > 0:
         avg_daily_calories = total_week_calories / days_with_data
         accuracy_percentage = (avg_daily_calories / daily_calories) * 100
+        tolerance_percentage = (days_within_tolerance / days_with_data) * 100
     else:
         accuracy_percentage = 0
+        tolerance_percentage = 0
 
     # Русские названия дней недели
     days_russian = {
@@ -146,6 +174,18 @@ def week_plan(request):
         day_actual = day_data.get('total_calories', 0)
         day_accuracy = (day_actual / day_target) * 100 if day_target > 0 else 0
 
+        # Определяем статус точности
+        tolerance = day_target * 0.05
+        if abs(day_actual - day_target) <= tolerance:
+            accuracy_status = 'success'
+            accuracy_text = 'В норме (±5%)'
+        elif day_actual < day_target:
+            accuracy_status = 'warning'
+            accuracy_text = 'Ниже нормы'
+        else:
+            accuracy_status = 'danger'
+            accuracy_text = 'Выше нормы'
+
         week_days.append({
             'key': day_key,
             'name': days_russian[day_key],
@@ -155,7 +195,9 @@ def week_plan(request):
             'dinner': dinner,
             'total_calories': day_actual,
             'target_calories': day_target,
-            'accuracy_percentage': day_accuracy
+            'accuracy_percentage': day_accuracy,
+            'accuracy_status': accuracy_status,
+            'accuracy_text': accuracy_text
         })
 
     context = {
@@ -163,7 +205,10 @@ def week_plan(request):
         'daily_calories': daily_calories,
         'user_data': user_data,
         'is_authenticated': request.user.is_authenticated,
-        'week_accuracy': accuracy_percentage
+        'week_accuracy': accuracy_percentage,
+        'tolerance_percentage': tolerance_percentage,
+        'plan_generated_new': plan_generated_new,
+        'current_week_start': current_week_start if request.user.is_authenticated else None
     }
 
     return render(request, 'nutrition_app/week_plan.html', context)
@@ -241,3 +286,23 @@ def day_plan(request, day_key):
     }
 
     return render(request, 'nutrition_app/day_plan.html', context)
+
+
+def refresh_weekly_plan(request):
+    """Принудительное обновление плана на неделю"""
+    if request.user.is_authenticated:
+        today = timezone.now().date()
+        current_week_start = today - timedelta(days=today.weekday())
+        weekly_plan_key = f'weekly_plan_{current_week_start}_{request.user.id}'
+
+        if weekly_plan_key in request.session:
+            del request.session[weekly_plan_key]
+
+        messages.success(request, 'Меню на неделю обновлено!')
+    else:
+        # Для неавторизованных
+        if 'weekly_meal_plan' in request.session:
+            del request.session['weekly_meal_plan']
+        messages.success(request, 'Меню обновлено!')
+
+    return redirect('week_plan')
