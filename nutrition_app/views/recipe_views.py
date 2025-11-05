@@ -15,6 +15,7 @@ def recipe_detail(request, recipe_id):
 
     # Ограничиваем диапазон порций (от 1 до 10)
     portions = max(1, min(portions, 10))
+    day_key = request.GET.get('day_key') or request.session.get('current_day')
 
     # Корректируем рецепт под выбранное количество порций
     adjusted_recipe = _adjust_portion(recipe, portions)
@@ -23,13 +24,14 @@ def recipe_detail(request, recipe_id):
     similar_recipes = Recipe.objects.filter(
         meal_type=recipe.meal_type
     ).exclude(id=recipe.id)[:3]
-
+    day_key = request.GET.get('day_key') or request.session.get('current_day')
     context = {
         'recipe': adjusted_recipe,
         'original_recipe': recipe,  # Сохраняем оригинальный рецепт для сброса
         'similar_recipes': similar_recipes,
         'current_portions': portions,
         'portion_range': range(1, 11),  # Для выпадающего списка
+        'day_key': day_key,
     }
 
     return render(request, 'nutrition_app/recipe_detail.html', context)

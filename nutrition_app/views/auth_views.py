@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from ..models import UserProfile
+from ..models import UserProfile, CustomUser
 from ..forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm
 from .utils import get_motivational_message, calculate_user_calories
 
@@ -29,25 +29,36 @@ def register(request):
 
 def user_login(request):
     if request.method == 'POST':
-        form = CustomAuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
+        # 🔥 ИСПОЛЬЗУЕМ ПРОСТУЮ АУТЕНТИФИКАЦИЮ БЕЗ ФОРМЫ
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        if username and password:
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.success(
-                    request, f'С возвращением, {user.first_name}!')
+
+                # 🔥 УБИРАЕМ СООБЩЕНИЕ ОБ УСПЕШНОМ ВХОДЕ
+                # messages.success(request, f'С возвращением, {user.first_name}!')
 
                 # Если у пользователя заполнены данные, сразу переходим к плану
-                if user.age and user.weight and user.height:
+                if hasattr(user, 'age') and user.age and user.weight and user.height:
                     return redirect('week_plan')
                 else:
                     return redirect('profile_setup')
-    else:
-        form = CustomAuthenticationForm()
+            else:
+                # 🔥 ИСПОЛЬЗУЕМ КАСТОМНОГО ПОЛЬЗОВАТЕЛЯ
+                if not CustomUser.objects.filter(username=username).exists():
+                    messages.error(
+                        request, '❌ Пользователь с таким логином не найден')
+                else:
+                    messages.error(request, '❌ Неверный пароль')
 
-    return render(request, 'nutrition_app/login.html', {'form': form})
+                # 🔥 ВОЗВРАЩАЕМ С СОХРАНЕННЫМ ЛОГИНОМ
+                return render(request, 'nutrition_app/login.html', {'username': username})
+
+    # 🔥 УБИРАЕМ ФОРМУ И ВОЗВРАЩАЕМ ПУСТОЙ ШАБЛОН
+    return render(request, 'nutrition_app/login.html')
 
 
 def user_logout(request):

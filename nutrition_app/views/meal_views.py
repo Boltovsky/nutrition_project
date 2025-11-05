@@ -4,7 +4,7 @@ from django.contrib import messages
 from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from ..models import UserProfile
-from .utils import generate_optimized_weekly_meal_plan, _get_recipe_from_session, _adjust_portion
+from .utils import generate_optimized_weekly_meal_plan, _get_recipe_from_session, _adjust_portion, optimize_daily_calories
 
 
 def calculate_calories(request):
@@ -216,20 +216,37 @@ def week_plan(request):
 
 def day_plan(request, day_key):
     """Детальный план на конкретный день"""
-    weekly_meal_plan = request.session.get('weekly_meal_plan')
-
-    if not weekly_meal_plan or day_key not in weekly_meal_plan:
-        return redirect('week_plan')
-
     if request.user.is_authenticated:
+        # Для авторизованных пользователей
         profile = get_object_or_404(UserProfile, user=request.user)
         daily_calories = profile.daily_calories
         user_data = {
             'goal': request.user.goal,
         }
+
+        # Определяем начало текущей недели (понедельник)
+        today = timezone.now().date()
+        current_week_start = today - timedelta(days=today.weekday())
+        weekly_plan_key = f'weekly_plan_{current_week_start}_{request.user.id}'
+
+        # Получаем план из сессии
+        weekly_meal_plan = request.session.get(weekly_plan_key)
+
+        if not weekly_meal_plan:
+            # Если плана нет в сессии, генерируем новый
+            weekly_meal_plan = generate_optimized_weekly_meal_plan(
+                daily_calories)
+            request.session[weekly_plan_key] = weekly_meal_plan
     else:
+        # Для неавторизованных используем сессию (старая логика)
+        weekly_meal_plan = request.session.get('weekly_meal_plan')
         daily_calories = request.session.get('daily_calories', 2000)
         user_data = request.session.get('user_data', {})
+
+    # Проверяем, есть ли план и запрошенный день
+    if not weekly_meal_plan or day_key not in weekly_meal_plan:
+        messages.error(request, f'План на выбранный день не найден')
+        return redirect('week_plan')
 
     # Русские названия дней недели
     days_russian = {
@@ -251,17 +268,33 @@ def day_plan(request, day_key):
     dinner = _get_recipe_from_session(day_data.get('dinner_id'))
 
     # Применяем корректировку порций к рецептам
-    if breakfast and day_data.get('breakfast_multiplier', 1) != 1:
-        breakfast = _adjust_portion(
-            breakfast, day_data.get('breakfast_multiplier', 1))
-    if lunch and day_data.get('lunch_multiplier', 1) != 1:
-        lunch = _adjust_portion(lunch, day_data.get('lunch_multiplier', 1))
-    if snack and day_data.get('snack_multiplier', 1) != 1:
-        snack = _adjust_portion(snack, day_data.get('snack_multiplier', 1))
-    if dinner and day_data.get('dinner_multiplier', 1) != 1:
-        dinner = _adjust_portion(dinner, day_data.get('dinner_multiplier', 1))
+    if all([breakfast, lunch, snack, dinner]):
+        breakfast, lunch, snack, dinner, optimized_calories = optimize_daily_calories(
+            breakfast, lunch, snack, dinner, float(daily_calories)
+        )
+        total_calories = optimized_calories
 
-    total_calories = day_data.get('total_calories', 0)
+        # 🔥 ВАЖНО: Берем множители ИЗ СКОРРЕКТИРОВАННЫХ РЕЦЕПТОВ
+        breakfast_multiplier = getattr(breakfast, 'portion_multiplier', 1.0)
+        lunch_multiplier = getattr(lunch, 'portion_multiplier', 1.0)
+        snack_multiplier = getattr(snack, 'portion_multiplier', 1.0)
+        dinner_multiplier = getattr(dinner, 'portion_multiplier', 1.0)
+
+        # Обновляем данные дня
+        day_data.update({
+            'breakfast_multiplier': breakfast_multiplier,
+            'lunch_multiplier': lunch_multiplier,
+            'snack_multiplier': snack_multiplier,
+            'dinner_multiplier': dinner_multiplier,
+            'total_calories': total_calories
+        })
+    else:
+        total_calories = day_data.get('total_calories', 0)
+        # Используем множители из сохраненных данных
+        breakfast_multiplier = day_data.get('breakfast_multiplier', 1.0)
+        lunch_multiplier = day_data.get('lunch_multiplier', 1.0)
+        snack_multiplier = day_data.get('snack_multiplier', 1.0)
+        dinner_multiplier = day_data.get('dinner_multiplier', 1.0)
 
     # Вычисляем отклонение и процент выполнения
     deviation = total_calories - daily_calories
@@ -269,7 +302,7 @@ def day_plan(request, day_key):
         percentage = (total_calories / daily_calories) * 100
     else:
         percentage = 0
-
+    request.session['current_day'] = day_key
     context = {
         'day_key': day_key,
         'day_name': days_russian[day_key],
@@ -282,7 +315,11 @@ def day_plan(request, day_key):
         'deviation': deviation,
         'percentage': percentage,
         'user_data': user_data,
-        'is_authenticated': request.user.is_authenticated
+        'is_authenticated': request.user.is_authenticated,
+        'breakfast_multiplier': breakfast_multiplier,
+        'lunch_multiplier': lunch_multiplier,
+        'snack_multiplier': snack_multiplier,
+        'dinner_multiplier': dinner_multiplier,
     }
 
     return render(request, 'nutrition_app/day_plan.html', context)

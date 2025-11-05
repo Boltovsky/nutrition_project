@@ -42,7 +42,7 @@ class CustomUser(AbstractUser):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+        CustomUser, on_delete=models.CASCADE, related_name='profile')
     daily_calories = models.IntegerField(
         default=2000, verbose_name="Суточная норма калорий")
     motivation_message = models.TextField(
