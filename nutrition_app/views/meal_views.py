@@ -1,7 +1,6 @@
 from datetime import timedelta
 from django.utils import timezone
 from django.contrib import messages
-from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from ..models import UserProfile
 from .utils import generate_optimized_weekly_meal_plan, _get_recipe_from_session, _adjust_portion, optimize_daily_calories
@@ -74,6 +73,21 @@ def week_plan(request):
         # Для авторизованных пользователей используем данные из профиля
         profile, created = UserProfile.objects.get_or_create(user=request.user)
         daily_calories = profile.daily_calories
+        # Определяем начало текущей недели
+        today = timezone.now().date()
+        current_week_start = today - timedelta(days=today.weekday())
+        weekly_plan_key = f'weekly_plan_{current_week_start}_{request.user.id}'
+
+        # 🔥 ВАЖНО: Проверяем есть ли уже план в сессии
+        if weekly_plan_key not in request.session:
+            # Если нет - генерируем новый
+            weekly_meal_plan = generate_optimized_weekly_meal_plan(
+                daily_calories)
+            request.session[weekly_plan_key] = weekly_meal_plan
+            request.session['weekly_plan_generated'] = today.isoformat()
+        else:
+            # Используем существующий план из сессии
+            weekly_meal_plan = request.session[weekly_plan_key]
         user_data = {
             'goal': request.user.goal,
             'age': request.user.age,
@@ -327,19 +341,39 @@ def day_plan(request, day_key):
 
 def refresh_weekly_plan(request):
     """Принудительное обновление плана на неделю"""
+    # 🔥 ПРИНУДИТЕЛЬНАЯ ПЕРЕЗАГРУЗКА ВСЕХ МОДУЛЕЙ
+    import sys
+    import importlib
+
+    # Удаляем все наши модули из кэша
+    modules_to_reload = []
+    for module_name in list(sys.modules.keys()):
+        if 'nutrition_app' in module_name or 'utils' in module_name:
+            modules_to_reload.append(module_name)
+
+    for module_name in modules_to_reload:
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+
+    # 🔥 ПЕРЕИМПОРТИРУЕМ ВСЕ С НУЛЯ
+    from nutrition_app.views.utils import generate_optimized_weekly_meal_plan, calculate_user_calories
+
     if request.user.is_authenticated:
+        daily_calories = calculate_user_calories(request.user)
+
         today = timezone.now().date()
         current_week_start = today - timedelta(days=today.weekday())
         weekly_plan_key = f'weekly_plan_{current_week_start}_{request.user.id}'
 
+        # Удаляем старый план
         if weekly_plan_key in request.session:
             del request.session[weekly_plan_key]
 
-        messages.success(request, 'Меню на неделю обновлено!')
-    else:
-        # Для неавторизованных
-        if 'weekly_meal_plan' in request.session:
-            del request.session['weekly_meal_plan']
-        messages.success(request, 'Меню обновлено!')
+        # Генерируем новый план
+        weekly_meal_plan = generate_optimized_weekly_meal_plan(daily_calories)
+        request.session[weekly_plan_key] = weekly_meal_plan
+        request.session.save()
+
+        messages.success(request, 'Меню на неделю успешно обновлено!')
 
     return redirect('week_plan')

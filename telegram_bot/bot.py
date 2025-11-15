@@ -2,18 +2,12 @@ import os
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 from django.conf import settings
 
-from telegram_bot.handlers import connect_command
-
-
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 if not TELEGRAM_BOT_TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN not found in environment variables")
 
-
 application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-
-# Функция для регистрации обработчиков
 
 
 def setup_handlers():
@@ -21,19 +15,18 @@ def setup_handlers():
 
     # Основные команды
     application.add_handler(CommandHandler("start", handlers.start))
-    application.add_handler(CommandHandler("help", handlers.help_command))
-    application.add_handler(CommandHandler("menu", handlers.show_today_menu))
-    application.add_handler(CommandHandler("id", handlers.get_my_id))
+    application.add_handler(CommandHandler("menu", handlers.menu))
+    application.add_handler(CommandHandler("help", handlers.show_help))
     application.add_handler(CommandHandler(
-        "notifications", handlers.notifications_settings))
-    application.add_handler(CommandHandler("connect", connect_command))
+        "connect", handlers.connect_command))
 
-    # ОДИН обработчик для ВСЕХ кнопок
+    # Обработчик кнопок
     application.add_handler(CallbackQueryHandler(handlers.handle_all_buttons))
 
+    print("✅ Обработчики бота настроены!")
 
-# Сразу настраиваем обработчики при импорте
+
+# Настраиваем обработчики
 setup_handlers()
 
-# Алиас для обратной совместимости
 bot = application

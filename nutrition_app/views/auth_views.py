@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from ..models import UserProfile, CustomUser
-from ..forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm
+from ..forms import CustomUserCreationForm, UserProfileForm
 from .utils import get_motivational_message, calculate_user_calories
 
 
@@ -38,11 +38,8 @@ def user_login(request):
             if user is not None:
                 login(request, user)
 
-                # 🔥 УБИРАЕМ СООБЩЕНИЕ ОБ УСПЕШНОМ ВХОДЕ
-                # messages.success(request, f'С возвращением, {user.first_name}!')
-
                 # Если у пользователя заполнены данные, сразу переходим к плану
-                if hasattr(user, 'age') and user.age and user.weight and user.height:
+                if hasattr(user, 'userprofile') and user.userprofile.daily_calories:
                     return redirect('week_plan')
                 else:
                     return redirect('profile_setup')
@@ -53,11 +50,8 @@ def user_login(request):
                         request, '❌ Пользователь с таким логином не найден')
                 else:
                     messages.error(request, '❌ Неверный пароль')
-
-                # 🔥 ВОЗВРАЩАЕМ С СОХРАНЕННЫМ ЛОГИНОМ
                 return render(request, 'nutrition_app/login.html', {'username': username})
 
-    # 🔥 УБИРАЕМ ФОРМУ И ВОЗВРАЩАЕМ ПУСТОЙ ШАБЛОН
     return render(request, 'nutrition_app/login.html')
 
 

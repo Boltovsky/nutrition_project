@@ -170,11 +170,15 @@ class UserNotificationSettings(models.Model):
     is_subscribed = models.BooleanField(
         default=True, verbose_name="Подписка на уведомления")
 
-    # Время уведомлений (будем использовать фиксированное для простоты)
-    send_morning_reminder = models.BooleanField(
-        default=True, verbose_name="Утренние напоминания")
-    send_evening_reminder = models.BooleanField(
-        default=True, verbose_name="Вечерние напоминания")
+    # 🔥 ДОБАВЬ ЭТИ ПОЛЯ - они используются в tasks.py
+    send_breakfast_reminder = models.BooleanField(
+        default=True, verbose_name="Уведомления о завтраке")
+    send_lunch_reminder = models.BooleanField(
+        default=True, verbose_name="Уведомления об обеде")
+    send_snack_reminder = models.BooleanField(
+        default=True, verbose_name="Уведомления о перекусе")
+    send_dinner_reminder = models.BooleanField(
+        default=True, verbose_name="Уведомления об ужине")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

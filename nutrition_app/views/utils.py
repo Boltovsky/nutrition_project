@@ -123,7 +123,7 @@ def _adjust_portion(recipe, new_multiplier):
     current_multiplier = getattr(recipe, 'portion_multiplier', 1.0)
     total_multiplier = current_multiplier * new_multiplier
     total_multiplier = round(float(total_multiplier), 1)
-    
+
     # Всегда получаем ОРИГИНАЛЬНЫЙ рецепт из базы данных
     try:
         original_recipe = Recipe.objects.get(id=recipe.id)
@@ -136,7 +136,7 @@ def _adjust_portion(recipe, new_multiplier):
         base_protein = recipe.protein
         base_fat = recipe.fat
         base_carbs = recipe.carbs
-    
+
     # Корректируем ингредиенты на ОБЩИЙ множитель
     adjusted_ingredients = _adjust_recipe_ingredients(
         recipe.ingredients, total_multiplier
@@ -161,8 +161,7 @@ def _adjust_portion(recipe, new_multiplier):
     # 🔥 Сохраняем ОБЩИЙ множитель
     adjusted_recipe.portion_multiplier = total_multiplier
     adjusted_recipe.original_calories = base_calories
-    
-    
+
     return adjusted_recipe
 
 
@@ -202,150 +201,8 @@ def _select_recipe_for_meal(meal_type, target_calories, used_recipe_ids=None):
     return None, used_recipe_ids
 
 
-def _optimize_day_with_portions(breakfast_target, lunch_target, snack_target, dinner_target, max_attempts=30):
-    """Оптимизирует подбор рецептов с корректировкой порций"""
-    total_target = breakfast_target + lunch_target + snack_target + dinner_target
-
-    for attempt in range(max_attempts):
-        # Подбираем базовые рецепты
-        breakfast, used_ids = _select_recipe_for_meal(
-            'breakfast', breakfast_target)
-        lunch, used_ids = _select_recipe_for_meal(
-            'lunch', lunch_target, used_ids)
-        snack, used_ids = _select_recipe_for_meal(
-            'snack', snack_target, used_ids)
-        dinner, used_ids = _select_recipe_for_meal(
-            'dinner', dinner_target, used_ids)
-
-        if not all([breakfast, lunch, snack, dinner]):
-            continue
-
-        # Рассчитываем текущую калорийность
-        current_calories = (
-            float(breakfast.calories) +
-            float(lunch.calories) +
-            float(snack.calories) +
-            float(dinner.calories)
-        )
-
-        # Если калорийность близка к цели (±5%), возвращаем как есть
-        if abs(current_calories - total_target) <= total_target * 0.05:
-            return breakfast, lunch, snack, dinner, current_calories
-
-        # Если калорий недостаточно, увеличиваем порции
-        if current_calories < total_target:
-            deficit = total_target - current_calories
-
-            # Распределяем дефицит по приемам пищи пропорционально их целевой калорийности
-            meal_targets = [breakfast_target,
-                            lunch_target, snack_target, dinner_target]
-            meals = [breakfast, lunch, snack, dinner]
-            meal_names = ['breakfast', 'lunch', 'snack', 'dinner']
-
-            total_meal_target = sum(meal_targets)
-
-            for i, (meal, meal_target) in enumerate(zip(meals, meal_targets)):
-                if meal_target > 0:
-                    # Рассчитываем, сколько калорий нужно добавить этому приему пищи
-                    meal_share = meal_target / total_meal_target
-                    additional_calories_needed = deficit * meal_share
-
-                    # Рассчитываем множитель порции
-                    if float(meal.calories) > 0:
-                        portion_multiplier = 1 + \
-                            (additional_calories_needed / float(meal.calories))
-
-                        # Ограничиваем максимальное увеличение порции (не более 2x)
-                        portion_multiplier = min(portion_multiplier, 2.0)
-
-                        # Корректируем рецепт
-                        meals[i] = _adjust_portion(meal, portion_multiplier)
-
-            # Пересчитываем общую калорийность
-            adjusted_calories = sum(float(meal.calories) for meal in meals)
-
-            # Если после корректировки мы близки к цели, возвращаем результат
-            if abs(adjusted_calories - total_target) <= total_target * 0.1:
-                return meals[0], meals[1], meals[2], meals[3], adjusted_calories
-
-    # Если не удалось оптимизировать, возвращаем лучший вариант
-    return breakfast, lunch, snack, dinner, current_calories
-
-
-def _smart_portion_adjustment(breakfast, lunch, snack, dinner, total_target):
-    """Умная корректировка порций для точного достижения цели (±5%)"""
-    meals = [breakfast, lunch, snack, dinner]
-
-    # Рассчитываем текущую калорийность
-    current_calories = sum(float(meal.calories) for meal in meals)
-
-    # Если уже в пределах ±5% от цели - не корректируем
-    tolerance = total_target * 0.05  # 5% допуск
-    if abs(current_calories - total_target) <= tolerance:
-        return breakfast, lunch, snack, dinner, current_calories
-
-    # Рассчитываем необходимую корректировку
-    adjustment_factor = total_target / current_calories if current_calories > 0 else 1
-
-    # Ограничиваем диапазон корректировки (0.7 - 1.5) чтобы не было экстремальных порций
-    adjustment_factor = max(0.7, min(adjustment_factor, 1.5))
-
-    # Применяем корректировку ко всем приемам пищи
-    adjusted_meals = []
-    for meal in meals:
-        adjusted_meal = _adjust_portion(meal, adjustment_factor)
-        adjusted_meals.append(adjusted_meal)
-
-    adjusted_calories = sum(float(meal.calories) for meal in adjusted_meals)
-
-    # Проверяем, что после корректировки мы в пределах допуска
-    final_tolerance = total_target * 0.05
-    if abs(adjusted_calories - total_target) > final_tolerance:
-        # Если все еще не в пределах допуска, делаем точную подстройку
-        return _precise_calorie_adjustment(adjusted_meals, total_target)
-
-    return adjusted_meals[0], adjusted_meals[1], adjusted_meals[2], adjusted_meals[3], adjusted_calories
-
-
-def _precise_calorie_adjustment(meals, total_target):
-    """Точная подстройка калорийности путем изменения порций отдельных блюд"""
-    current_calories = sum(float(meal.calories) for meal in meals)
-    calorie_difference = total_target - current_calories
-
-    # Сортируем блюда по калорийности (сначала самые калорийные)
-    sorted_meals = sorted(meals, key=lambda x: float(x.calories), reverse=True)
-
-    # Распределяем разницу по самым калорийным блюдам
-    for meal in sorted_meals:
-        if abs(calorie_difference) < 10:  # Если осталась маленькая разница - выходим
-            break
-
-        meal_calories = float(meal.calories)
-        if meal_calories > 0:
-            # Рассчитываем корректировку для этого блюда
-            # 50% разницы на это блюдо
-            portion_adjustment = 1 + (calorie_difference / meal_calories * 0.5)
-            # Ограничиваем изменения
-            portion_adjustment = max(0.8, min(portion_adjustment, 1.2))
-
-            adjusted_meal = _adjust_portion(meal, portion_adjustment)
-            adjusted_calories = float(adjusted_meal.calories)
-
-            # Обновляем разницу
-            calorie_difference -= (adjusted_calories - meal_calories)
-
-            # Заменяем блюдо в оригинальном списке
-            for i, original_meal in enumerate(meals):
-                if original_meal.id == meal.id:
-                    meals[i] = adjusted_meal
-                    break
-
-    final_calories = sum(float(meal.calories) for meal in meals)
-    return meals[0], meals[1], meals[2], meals[3], final_calories
-
-
 def _select_recipe_for_meal_weekly(meal_type, target_calories, used_recipe_ids, day_variation_seed):
-    """Выбирает рецепт для указанного приема пищи с учетом уже использованных за неделю"""
+    """Выбирает рецепт БЕЗ фиксированного seed"""
     # Создаем локальную копию для безопасности
     current_used_ids = used_recipe_ids.copy()
 
@@ -360,9 +217,7 @@ def _select_recipe_for_meal_weekly(meal_type, target_calories, used_recipe_ids, 
         if not available_recipes:
             return None, used_recipe_ids
 
-    # Используем seed для воспроизводимости, но разный для каждого дня и типа еды
-    random.seed(day_variation_seed + hash(meal_type) + len(available_recipes))
-
+    # 🔥 УБИРАЕМ ФИКСИРОВАННЫЙ SEED - используем настоящую случайность
     # Сначала ищем рецепты, которые подходят по калориям (±20% для большего выбора)
     good_matches = [
         recipe for recipe in available_recipes
@@ -375,7 +230,7 @@ def _select_recipe_for_meal_weekly(meal_type, target_calories, used_recipe_ids, 
         # Если нет хороших совпадений, берем случайный из доступных
         selected_recipe = random.choice(available_recipes)
 
-    random.seed()  # Сбрасываем seed
+    # 🔥 УБИРАЕМ random.seed() - не сбрасываем глобальный random
 
     if selected_recipe:
         # Добавляем выбранный рецепт в использованные
@@ -385,7 +240,7 @@ def _select_recipe_for_meal_weekly(meal_type, target_calories, used_recipe_ids, 
 
 
 def _optimize_day_with_portions_weekly(breakfast_target, lunch_target, snack_target, dinner_target, used_recipe_ids, day_number, max_attempts=15):
-    """Оптимизирует подбор рецептов с учетом использованных за неделю рецептов"""
+    """Оптимизирует подбор рецептов БЕЗ фиксированных seed"""
     total_target = breakfast_target + lunch_target + snack_target + dinner_target
 
     best_combination = None
@@ -393,17 +248,19 @@ def _optimize_day_with_portions_weekly(breakfast_target, lunch_target, snack_tar
 
     for attempt in range(max_attempts):
         current_used_ids = used_recipe_ids.copy()
-        day_seed = day_number * 100 + attempt
+
+        # 🔥 УБИРАЕМ ФИКСИРОВАННЫЙ SEED - используем настоящую случайность
 
         # Подбираем рецепты
         breakfast, used_after_breakfast = _select_recipe_for_meal_weekly(
-            'breakfast', breakfast_target, current_used_ids, day_seed + 1)
+            # ⬅️ передаем attempt вместо seed
+            'breakfast', breakfast_target, current_used_ids, attempt)
         lunch, used_after_lunch = _select_recipe_for_meal_weekly(
-            'lunch', lunch_target, used_after_breakfast, day_seed + 2)
+            'lunch', lunch_target, used_after_breakfast, attempt)
         snack, used_after_snack = _select_recipe_for_meal_weekly(
-            'snack', snack_target, used_after_lunch, day_seed + 3)
+            'snack', snack_target, used_after_lunch, attempt)
         dinner, used_after_dinner = _select_recipe_for_meal_weekly(
-            'dinner', dinner_target, used_after_snack, day_seed + 4)
+            'dinner', dinner_target, used_after_snack, attempt)
 
         if not all([breakfast, lunch, snack, dinner]):
             continue
@@ -479,23 +336,29 @@ def _get_fallback_recipes(breakfast_target, lunch_target, snack_target, dinner_t
 
 
 def generate_optimized_weekly_meal_plan(daily_calories):
-    """Генерирует оптимизированный рацион на неделю с УНИКАЛЬНЫМИ рецептами каждый день"""
+    """Генерирует оптимизированный рацион на неделю с УНИКАЛЬНЫМИ рецептами каждый раз"""
+
+    # 🔥 ДОБАВЛЯЕМ ПРИНУДИТЕЛЬНУЮ РАНДОМИЗАЦИЮ
+    import random
+    import time
+    random.seed(time.time())  # Разный seed каждый раз
+
     days_of_week = ['monday', 'tuesday', 'wednesday',
                     'thursday', 'friday', 'saturday', 'sunday']
     weekly_plan = {}
 
     # Разные распределения калорий для каждого дня
     distributions = [
-        (0.25, 0.35, 0.15, 0.25),  # Понедельник - стандартное
-        (0.30, 0.30, 0.15, 0.25),  # Вторник - больше завтрак
-        (0.25, 0.40, 0.10, 0.25),  # Среда - больше обед
-        (0.20, 0.35, 0.20, 0.25),  # Четверг - больше перекусов
-        (0.28, 0.32, 0.18, 0.22),  # Пятница - сбалансированное
-        (0.22, 0.38, 0.12, 0.28),  # Суббота - акцент на обед
-        (0.26, 0.34, 0.16, 0.24),  # Воскресенье - равномерное
+        (0.25, 0.35, 0.15, 0.25),  # Понедельник
+        (0.30, 0.30, 0.15, 0.25),  # Вторник
+        (0.25, 0.40, 0.10, 0.25),  # Среда
+        (0.20, 0.35, 0.20, 0.25),  # Четверг
+        (0.28, 0.32, 0.18, 0.22),  # Пятница
+        (0.22, 0.38, 0.12, 0.28),  # Суббота
+        (0.26, 0.34, 0.16, 0.24),  # Воскресенье
     ]
 
-    # Отслеживаем использованные рецепты за всю неделю
+    # 🔥 ПРИНУДИТЕЛЬНО ОЧИЩАЕМ ИСПОЛЬЗОВАННЫЕ РЕЦЕПТЫ
     weekly_used_recipe_ids = set()
 
     for i, day in enumerate(days_of_week):
@@ -505,8 +368,6 @@ def generate_optimized_weekly_meal_plan(daily_calories):
         lunch_target = int(daily_calories * distribution[1])
         snack_target = int(daily_calories * distribution[2])
         dinner_target = int(daily_calories * distribution[3])
-
-        total_target = breakfast_target + lunch_target + snack_target + dinner_target
 
         # Подбираем рецепты для дня
         breakfast, lunch, snack, dinner, total_calories, daily_used_ids = _optimize_day_with_portions_weekly(
@@ -518,7 +379,6 @@ def generate_optimized_weekly_meal_plan(daily_calories):
         weekly_used_recipe_ids.update(daily_used_ids)
 
         if all([breakfast, lunch, snack, dinner]):
-            # 🔥 СОХРАНЯЕМ ТОЛЬКО ID, а не объекты Recipe
             weekly_plan[day] = {
                 'breakfast_id': breakfast.id,
                 'lunch_id': lunch.id,
@@ -533,7 +393,7 @@ def generate_optimized_weekly_meal_plan(daily_calories):
                 'day_name': ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'][i]
             }
         else:
-            # Запасной вариант - тоже сохраняем только ID
+            # Запасной вариант
             weekly_plan[day] = _create_fallback_day_plan(daily_calories, i)
 
     return weekly_plan
@@ -756,21 +616,3 @@ def _increase_portions_smart(recipes, total_target, priority_order):
             break
 
     return adjusted_recipes, current_calories
-
-
-def _calculate_multiplier(original_recipe, adjusted_recipe):
-    """Рассчитывает фактический множитель порции"""
-    if original_recipe and adjusted_recipe:
-        try:
-            
-            if hasattr(adjusted_recipe, 'portion_multiplier'):
-                return adjusted_recipe.portion_multiplier
-            
-            # Или рассчитываем
-            original_calories = float(original_recipe.calories)
-            adjusted_calories = float(adjusted_recipe.calories)
-            if original_calories > 0:
-                return round(adjusted_calories / original_calories, 1)
-        except:
-            pass
-    return 1.0

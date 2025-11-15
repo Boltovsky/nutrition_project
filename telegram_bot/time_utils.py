@@ -1,31 +1,47 @@
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, time
 
-
-def is_reminder_time(user, reminder_type='morning'):
-    """Проверка времени уведомлений - РАЗНЫЕ минуты для тестирования"""
+def is_meal_time(user, meal_type):
+    """Проверка времени для уведомлений о приемах пищи"""
     try:
         settings = user.notification_settings
 
         if not settings.is_subscribed:
             return False
 
-        if reminder_type == 'morning' and not settings.send_morning_reminder:
-            return False
-        if reminder_type == 'evening' and not settings.send_evening_reminder:
+        # Проверяем, включены ли уведомления для конкретного приема пищи
+        if not getattr(settings, f'send_{meal_type}_reminder', True):
             return False
 
-        # РАЗНЫЕ МИНУТЫ для тестирования:
-        current_time = timezone.now()
-        current_minute = current_time.minute
+        # Время приемов пищи
+        meal_times = {
+            'breakfast': time(9, 0),    # 09:00
+            'lunch': time(14, 0),       # 14:00
+            'snack': time(16, 0),       # 16:00
+            'dinner': time(18, 0),      # 18:00
+        }
 
-        if reminder_type == 'morning':
-            # Утренние: каждая ЧЕТНАЯ минута (0, 2, 4, 6...)
-            return current_minute % 2 == 0
-        else:  # evening
-            # Вечерние: каждая НЕЧЕТНАЯ минута (1, 3, 5, 7...)
-            return current_minute % 2 == 1
+        current_time = timezone.now().time()
+        target_time = meal_times.get(meal_type)
+
+        if not target_time:
+            return False
+
+        # Точное совпадение по часам и минутам
+        return (current_time.hour == target_time.hour and 
+                current_time.minute == target_time.minute)
 
     except Exception as e:
-        print(f"Error in is_reminder_time: {e}")
+        print(f"Error in is_meal_time: {e}")
+        return False
+
+# Для обратной совместимости - оставляем старую функцию
+def is_reminder_time(user, reminder_type='morning'):
+    """Старая функция для обратной совместимости"""
+    # Просто вызываем новую функцию с преобразованием типов
+    if reminder_type == 'morning':
+        return is_meal_time(user, 'breakfast')
+    elif reminder_type == 'evening':
+        return is_meal_time(user, 'dinner')
+    else:
         return False

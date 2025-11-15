@@ -1,3 +1,9 @@
 [16104] 31 Oct 13:43:18.166 * Redis 3.0.504 (00000000/0) 64 bit, standalone mode, port 6379, pid 16104 ready to start.
 [16104] 31 Oct 13:43:18.167 # Server started, Redis version 3.0.504
 [16104] 31 Oct 13:43:18.167 * The server is now ready to accept connections on port 6379
+[4224] 06 Nov 17:19:04.692 * Redis 3.0.504 (00000000/0) 64 bit, standalone mode, port 6379, pid 4224 ready to start.
+[4224] 06 Nov 17:19:04.700 # Server started, Redis version 3.0.504
+[4224] 06 Nov 17:19:04.700 * The server is now ready to accept connections on port 6379
+[4952] 10 Nov 12:21:28.172 * Redis 3.0.504 (00000000/0) 64 bit, standalone mode, port 6379, pid 4952 ready to start.
+[4952] 10 Nov 12:21:28.172 # Server started, Redis version 3.0.504
+[4952] 10 Nov 12:21:28.187 * The server is now ready to accept connections on port 6379

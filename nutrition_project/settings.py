@@ -130,8 +130,15 @@ CELERY_ENABLE_UTC = False
 
 # Celery Beat Schedule
 CELERY_BEAT_SCHEDULE = {
-    'check-all-reminders': {
-        'task': 'telegram_bot.tasks.check_all_reminders',
-        'schedule': 30.0,  # Каждые 30 секунд
+    # 🔥 ДЛЯ ТЕСТА - каждые 2 минуты (используем нашу задачу)
+    'test-notifications-every-2-min': {
+        'task': 'telegram_bot.tasks.send_test_notifications',
+        'schedule': 120.0,  # 120 секунд
+    },
+
+    # 🎯 ОСНОВНАЯ ПРОВЕРКА - каждые 5 минут
+    'check-meal-reminders-every-5-min': {
+        'task': 'telegram_bot.tasks.check_and_send_meal_reminders',
+        'schedule': 300.0,  # 300 секунд = 5 минут
     },
 }
